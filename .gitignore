@@ -1,0 +1,42 @@
+# Local dependency checkouts and runtime caches
+.cache/
+.tmp/
+tmp/
+temp/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# macOS / editor noise
+.DS_Store
+._*
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs and local command output
+*.log
+*.tmp
+*.bak
+*.orig
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Agent/local machine state
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+session_index.jsonl
+history.jsonl

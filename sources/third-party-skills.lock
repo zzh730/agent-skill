@@ -1,0 +1,181 @@
+dependencies:
+  - name: agent-browser
+    upstream: https://github.com/vercel-labs/agent-browser.git
+    resolved_ref: 4ad284890cb59564af603e6de403dd75dd19e832
+    resolved_at: 2026-05-24
+  - name: caveman
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: company-valuation
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: diagnose
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: discord-reader
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: earnings-preview
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: earnings-recap
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: electron
+    upstream: https://github.com/vercel-labs/agent-browser.git
+    resolved_ref: 4ad284890cb59564af603e6de403dd75dd19e832
+    resolved_at: 2026-05-24
+  - name: estimate-analysis
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: etf-premium
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: finance-sentiment
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: find-skills
+    upstream: https://github.com/vercel-labs/skills.git
+    resolved_ref: e4243fbf7d9398722024f62850ece90fa0d5c693
+    resolved_at: 2026-05-24
+  - name: funda-data
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: generative-ui
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: grill-me
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: grill-with-docs
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: gws-calendar
+    upstream: https://github.com/googleworkspace/cli.git
+    resolved_ref: a3768d0e82ad83cca2da97724e46bea4ff0e6dbd
+    resolved_at: 2026-05-24
+  - name: gws-docs
+    upstream: https://github.com/googleworkspace/cli.git
+    resolved_ref: a3768d0e82ad83cca2da97724e46bea4ff0e6dbd
+    resolved_at: 2026-05-24
+  - name: gws-drive
+    upstream: https://github.com/googleworkspace/cli.git
+    resolved_ref: a3768d0e82ad83cca2da97724e46bea4ff0e6dbd
+    resolved_at: 2026-05-24
+  - name: gws-gmail
+    upstream: https://github.com/googleworkspace/cli.git
+    resolved_ref: a3768d0e82ad83cca2da97724e46bea4ff0e6dbd
+    resolved_at: 2026-05-24
+  - name: hormuz-strait
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: improve-codebase-architecture
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: linkedin-reader
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: opencli-reader
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: options-payoff
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: planning-with-files
+    upstream: https://github.com/OthmanAdi/planning-with-files.git
+    resolved_ref: 1146688b3a1e4c2ab88b9f4c716d5b07b4f70b50
+    resolved_at: 2026-05-24
+  - name: playlist-builder
+    upstream: https://github.com/fredbenenson/playlist-builder.git
+    resolved_ref: e55a592e506f0a7f920f0bdb5bb431495e5f9f12
+    resolved_at: 2026-05-24
+  - name: saas-valuation-compression
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: sepa-strategy
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: setup-matt-pocock-skills
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: slack
+    upstream: https://github.com/vercel-labs/agent-browser.git
+    resolved_ref: 4ad284890cb59564af603e6de403dd75dd19e832
+    resolved_at: 2026-05-24
+  - name: startup-analysis
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: stock-correlation
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: stock-liquidity
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: tdd
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: telegram-reader
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: to-issues
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: to-prd
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: tradingview-reader
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: triage
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: twitter-reader
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: write-a-skill
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24
+  - name: yc-reader
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: yfinance-data
+    upstream: https://github.com/himself65/finance-skills.git
+    resolved_ref: 294dc86f2ca2567fbc881b9b10b88f5aba4bd8e0
+    resolved_at: 2026-05-24
+  - name: zoom-out
+    upstream: https://github.com/mattpocock/skills.git
+    resolved_ref: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+    resolved_at: 2026-05-24

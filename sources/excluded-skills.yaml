@@ -1,0 +1,13 @@
+excluded:
+  - be-service-current-deploy-versions
+  - databricks
+  - feed-pedregal-homepage-parity
+  - google-drive
+  - kill-carousel-pod
+  - legacy-feed-shadow-testing
+  - sandbox-verification
+  - sjem
+  - snowflake
+  - snowflake-to-taulu
+  - spinnaker
+  - trino
