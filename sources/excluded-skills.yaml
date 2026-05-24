@@ -5,9 +5,20 @@ excluded:
   - google-drive
   - kill-carousel-pod
   - legacy-feed-shadow-testing
+  - paseo
+  - paseo-chat
+  - paseo-committee
+  - paseo-handoff
+  - paseo-loop
+  - paseo-orchestrator
+  - pdf
+  - playwright
   - sandbox-verification
+  - screenshot
   - sjem
   - snowflake
   - snowflake-to-taulu
   - spinnaker
+  - transcribe
   - trino
+  - yeet

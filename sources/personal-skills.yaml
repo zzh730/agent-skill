@@ -5,27 +5,6 @@ skills:
   - name: notebooklm
     imported_from: claude
     imported_at: 2026-05-24
-  - name: paseo
-    imported_from: codex
-    imported_at: 2026-05-24
-  - name: paseo-chat
-    imported_from: codex
-    imported_at: 2026-05-24
-  - name: paseo-committee
-    imported_from: codex
-    imported_at: 2026-05-24
-  - name: paseo-handoff
-    imported_from: codex
-    imported_at: 2026-05-24
-  - name: paseo-loop
-    imported_from: codex
-    imported_at: 2026-05-24
-  - name: paseo-orchestrator
-    imported_from: codex
-    imported_at: 2026-05-24
-  - name: pdf
-    imported_from: codex
-    imported_at: 2026-05-24
   - name: peon-ping-config
     imported_from: claude
     imported_at: 2026-05-24
@@ -35,21 +14,10 @@ skills:
   - name: plannotator-compound
     imported_from: claude
     imported_at: 2026-05-24
-  - name: playwright
-    imported_from: codex
-    imported_at: 2026-05-24
-  - name: screenshot
-    imported_from: codex
-    imported_at: 2026-05-24
   - name: sd-practice
     imported_from: claude
     imported_at: 2026-05-24
   - name: system-design-interview
     imported_from: claude
     imported_at: 2026-05-24
-  - name: transcribe
-    imported_from: codex
-    imported_at: 2026-05-24
-  - name: yeet
-    imported_from: codex
-    imported_at: 2026-05-24
+
