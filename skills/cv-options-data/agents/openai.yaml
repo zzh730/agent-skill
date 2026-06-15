@@ -1,0 +1,4 @@
+interface:
+  display_name: "CV Options Data"
+  short_description: "Query and analyze cvserver options data"
+  default_prompt: "Use $cv-options-data to inspect SPY option chains and summarize gamma levels."

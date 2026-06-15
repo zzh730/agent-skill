@@ -1,4 +1,7 @@
 skills:
+  - name: cv-options-data
+    imported_from: codex
+    imported_at: 2026-06-14
   - name: migrate-to-codex
     imported_from: codex
     imported_at: 2026-05-24
@@ -20,4 +23,3 @@ skills:
   - name: system-design-interview
     imported_from: claude
     imported_at: 2026-05-24
-
