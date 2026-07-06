@@ -1,4 +1,7 @@
 skills:
+  - name: cv-financial-market-data
+    imported_from: codex
+    imported_at: 2026-07-05
   - name: cv-options-data
     imported_from: codex
     imported_at: 2026-06-14
