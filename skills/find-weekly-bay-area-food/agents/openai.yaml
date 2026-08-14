@@ -1,0 +1,4 @@
+interface:
+  display_name: "Weekly Bay Area Food Finder"
+  short_description: "Validate Bay Area food picks with five RedNote reviews"
+  default_prompt: "Use $find-weekly-bay-area-food to find Bay Area restaurants, require five of five RedNote recommendations, annotate 避雷 or 踩雷 mentions, validate on Google Maps, deduplicate, and save the results."

@@ -16,6 +16,11 @@ DEFAULT_HOMES = {
     "claude": Path.home() / ".claude",
     "codex": Path.home() / ".codex",
     "agents": Path.home() / ".agents",
+    "grok": Path.home() / ".grok",
+}
+
+IMPORT_ONLY_HOMES = {
+    "grok-bundled": Path.home() / ".grok" / "bundled",
 }
 
 
@@ -278,6 +283,13 @@ def _owned_skill_dirs(repo: Path) -> list[Path]:
     return sorted(path for path in skills_dir.iterdir() if (path / "SKILL.md").exists())
 
 
+def _owned_skill_source(repo: Path, skill_dir: Path, target: str) -> Path:
+    variant = repo / "skill-variants" / target / skill_dir.name
+    if (variant / "SKILL.md").exists():
+        return variant
+    return skill_dir
+
+
 def bootstrap(
     repo: Path,
     *,
@@ -296,7 +308,7 @@ def bootstrap(
             actions.append(f"install owned skill {skill_dir.name} -> {target}")
             if not dry_run:
                 dest.parent.mkdir(parents=True, exist_ok=True)
-                _copy_dir(skill_dir, dest)
+                _copy_dir(_owned_skill_source(repo, skill_dir, target), dest)
 
     if "claude" in targets:
         command_dir = repo / "commands" / "claude"
@@ -342,18 +354,26 @@ def import_local_skill(
     homes: dict[str, Path] | None = None,
     dry_run: bool,
     force: bool = False,
+    variant_for: str | None = None,
 ) -> list[str]:
-    homes = {**DEFAULT_HOMES, **(homes or {})}
+    homes = {**DEFAULT_HOMES, **IMPORT_ONLY_HOMES, **(homes or {})}
     if source not in homes:
         raise SkillRepoError(f"unknown source: {source}")
     src = _target_skill_dir(homes, source) / name
     if not (src / "SKILL.md").exists():
         raise SkillRepoError(f"local skill not found: {src}")
-    dest = repo / "skills" / name
-    if dest.exists() and not force:
-        raise SkillRepoError(f"repo skill already exists: {name}; pass --force to replace")
+    if variant_for is not None and variant_for not in DEFAULT_HOMES:
+        raise SkillRepoError(f"unknown variant target: {variant_for}")
+    if variant_for is not None and not (repo / "skills" / name / "SKILL.md").exists():
+        raise SkillRepoError(f"canonical repo skill not found: {name}; import it before adding a variant")
 
-    actions = [f"import {source}:{name} -> skills/{name}"]
+    dest = repo / "skill-variants" / variant_for / name if variant_for else repo / "skills" / name
+    if dest.exists() and not force:
+        label = f"{name} ({variant_for} variant)" if variant_for else name
+        raise SkillRepoError(f"repo skill already exists: {label}; pass --force to replace")
+
+    relative_dest = dest.relative_to(repo)
+    actions = [f"import {source}:{name} -> {relative_dest}"]
     if dry_run:
         return actions
 
@@ -361,8 +381,16 @@ def import_local_skill(
     _copy_dir(src, dest)
     personal_path = repo / "sources" / "personal-skills.yaml"
     personal = load_manifest(personal_path)
+    existing = next((item for item in personal.get("skills", []) if item.get("name") == name), {})
     skills = [item for item in personal.get("skills", []) if item.get("name") != name]
-    skills.append({"name": name, "imported_from": source, "imported_at": _today()})
+    metadata = {**existing, "name": name}
+    if variant_for is None:
+        metadata.update({"imported_from": source, "imported_at": _today()})
+    else:
+        variants = set(metadata.get("variants", []))
+        variants.add(variant_for)
+        metadata["variants"] = sorted(variants)
+    skills.append(metadata)
     personal["skills"] = sorted(skills, key=lambda item: item["name"])
     save_manifest(personal_path, personal)
     return actions
@@ -385,7 +413,7 @@ def doctor(repo: Path, *, homes: dict[str, Path] | None = None) -> dict[str, lis
     excluded = _excluded_names(repo)
 
     local: set[str] = set()
-    for target in ("claude", "codex", "agents"):
+    for target in ("claude", "codex", "agents", "grok"):
         if target in homes:
             local.update(_skill_names_in(_target_skill_dir(homes, target)))
 
@@ -418,7 +446,7 @@ def main_add(argv: list[str] | None = None) -> int:
     parser.add_argument("--upstream", required=True)
     parser.add_argument("--ref", default="HEAD")
     parser.add_argument("--skill-path", required=True)
-    parser.add_argument("--targets", default="claude,codex")
+    parser.add_argument("--targets", default="claude,codex,grok")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--install", action="store_true")
     args = parser.parse_args(argv)
@@ -446,7 +474,7 @@ def main_sync(argv: list[str] | None = None) -> int:
 
 def main_bootstrap(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--targets", default="claude,codex")
+    parser.add_argument("--targets", default="claude,codex,grok")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
     return _print_actions(bootstrap(repo_root_from_script(), targets=_parse_targets(args.targets), dry_run=args.dry_run))
@@ -454,12 +482,27 @@ def main_bootstrap(argv: list[str] | None = None) -> int:
 
 def main_import(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--from", dest="source", required=True, choices=["claude", "codex", "agents"])
+    parser.add_argument(
+        "--from",
+        dest="source",
+        required=True,
+        choices=sorted([*DEFAULT_HOMES, *IMPORT_ONLY_HOMES]),
+    )
     parser.add_argument("--name", required=True)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--variant-for", choices=sorted(DEFAULT_HOMES))
     args = parser.parse_args(argv)
-    return _print_actions(import_local_skill(repo_root_from_script(), source=args.source, name=args.name, dry_run=args.dry_run, force=args.force))
+    return _print_actions(
+        import_local_skill(
+            repo_root_from_script(),
+            source=args.source,
+            name=args.name,
+            dry_run=args.dry_run,
+            force=args.force,
+            variant_for=args.variant_for,
+        )
+    )
 
 
 def main_doctor(argv: list[str] | None = None) -> int:
