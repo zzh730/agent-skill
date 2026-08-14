@@ -3,224 +3,224 @@ dependencies:
     upstream: https://github.com/vercel-labs/agent-browser.git
     ref: HEAD
     skill_path: skills/agent-browser
-    targets: [claude]
+    targets: [claude, grok]
   - name: caveman
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/productivity/caveman
-    targets: [claude]
+    targets: [claude, grok]
   - name: diagnose
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/engineering/diagnose
-    targets: [claude]
+    targets: [claude, grok]
   - name: electron
     upstream: https://github.com/vercel-labs/agent-browser.git
     ref: HEAD
     skill_path: skill-data/electron
-    targets: [claude]
+    targets: [claude, grok]
   - name: find-skills
     upstream: https://github.com/vercel-labs/skills.git
     ref: HEAD
     skill_path: skills/find-skills
-    targets: [claude]
+    targets: [claude, grok]
   - name: finance-sentiment
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/data-providers/skills/finance-sentiment
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: funda-data
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/data-providers/skills/funda-data
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: grill-me
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/productivity/grill-me
-    targets: [claude]
+    targets: [claude, grok]
   - name: grill-with-docs
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/engineering/grill-with-docs
-    targets: [claude]
+    targets: [claude, grok]
   - name: gws-calendar
     upstream: https://github.com/googleworkspace/cli.git
     ref: HEAD
     skill_path: skills/gws-calendar
-    targets: [claude]
+    targets: [claude, grok]
   - name: gws-docs
     upstream: https://github.com/googleworkspace/cli.git
     ref: HEAD
     skill_path: skills/gws-docs
-    targets: [claude]
+    targets: [claude, grok]
   - name: gws-drive
     upstream: https://github.com/googleworkspace/cli.git
     ref: HEAD
     skill_path: skills/gws-drive
-    targets: [claude]
+    targets: [claude, grok]
   - name: gws-gmail
     upstream: https://github.com/googleworkspace/cli.git
     ref: HEAD
     skill_path: skills/gws-gmail
-    targets: [claude]
+    targets: [claude, grok]
   - name: company-valuation
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/company-valuation
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: discord-reader
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/social-readers/skills/discord-reader
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: earnings-preview
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/earnings-preview
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: earnings-recap
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/earnings-recap
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: estimate-analysis
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/estimate-analysis
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: etf-premium
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/etf-premium
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: generative-ui
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/ui-tools/skills/generative-ui
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: hormuz-strait
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/data-providers/skills/hormuz-strait
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: improve-codebase-architecture
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/engineering/improve-codebase-architecture
-    targets: [claude]
+    targets: [claude, grok]
   - name: planning-with-files
     upstream: https://github.com/OthmanAdi/planning-with-files.git
     ref: HEAD
     skill_path: skills/planning-with-files
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: playlist-builder
     upstream: https://github.com/fredbenenson/playlist-builder.git
     ref: HEAD
     skill_path: .
-    targets: [claude]
+    targets: [claude, grok]
   - name: linkedin-reader
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/social-readers/skills/linkedin-reader
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: opencli-reader
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/social-readers/skills/opencli-reader
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: options-payoff
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/options-payoff
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: saas-valuation-compression
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/saas-valuation-compression
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: sepa-strategy
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/sepa-strategy
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: setup-matt-pocock-skills
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/engineering/setup-matt-pocock-skills
-    targets: [claude]
+    targets: [claude, grok]
   - name: slack
     upstream: https://github.com/vercel-labs/agent-browser.git
     ref: HEAD
     skill_path: skill-data/slack
-    targets: [claude]
+    targets: [claude, grok]
   - name: startup-analysis
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/startup-tools/skills/startup-analysis
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: stock-correlation
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/stock-correlation
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: stock-liquidity
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/stock-liquidity
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: tdd
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/engineering/tdd
-    targets: [claude]
+    targets: [claude, grok]
   - name: to-issues
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/engineering/to-issues
-    targets: [claude]
+    targets: [claude, grok]
   - name: to-prd
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/engineering/to-prd
-    targets: [claude]
+    targets: [claude, grok]
   - name: triage
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/engineering/triage
-    targets: [claude]
+    targets: [claude, grok]
   - name: tradingview-reader
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/data-providers/skills/tradingview-reader
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: telegram-reader
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/social-readers/skills/telegram-reader
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: twitter-reader
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/social-readers/skills/twitter-reader
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: write-a-skill
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/productivity/write-a-skill
-    targets: [claude]
+    targets: [claude, grok]
   - name: yc-reader
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/social-readers/skills/yc-reader
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: yfinance-data
     upstream: https://github.com/himself65/finance-skills.git
     ref: HEAD
     skill_path: plugins/market-analysis/skills/yfinance-data
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
   - name: zoom-out
     upstream: https://github.com/mattpocock/skills.git
     ref: HEAD
     skill_path: skills/engineering/zoom-out
-    targets: [claude]
+    targets: [claude, grok]

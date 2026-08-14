@@ -88,6 +88,7 @@ class AgentSkillRepoTests(unittest.TestCase):
             upstream = Path(tmp) / "upstream"
             claude_home = Path(tmp) / "claude"
             codex_home = Path(tmp) / "codex"
+            grok_home = Path(tmp) / "grok"
             repo.mkdir()
             upstream.mkdir()
             commit = make_git_skill_repo(upstream, "remote/example")
@@ -100,7 +101,7 @@ class AgentSkillRepoTests(unittest.TestCase):
     upstream: {upstream}
     ref: HEAD
     skill_path: remote/example
-    targets: [claude, codex]
+    targets: [claude, codex, grok]
 """,
             )
             write(
@@ -115,8 +116,8 @@ class AgentSkillRepoTests(unittest.TestCase):
 
             actions = bootstrap(
                 repo,
-                targets=["claude", "codex"],
-                homes={"claude": claude_home, "codex": codex_home},
+                targets=["claude", "codex", "grok"],
+                homes={"claude": claude_home, "codex": codex_home, "grok": grok_home},
                 dry_run=False,
             )
 
@@ -124,6 +125,8 @@ class AgentSkillRepoTests(unittest.TestCase):
             self.assertTrue((claude_home / "skills" / "mine" / "SKILL.md").exists())
             self.assertTrue((claude_home / "skills" / "example" / "SKILL.md").exists())
             self.assertTrue((codex_home / "skills" / "example" / "SKILL.md").exists())
+            self.assertTrue((grok_home / "skills" / "mine" / "SKILL.md").exists())
+            self.assertTrue((grok_home / "skills" / "example" / "SKILL.md").exists())
             self.assertTrue((claude_home / "commands" / "focus.md").exists())
 
     def test_bootstrap_replaces_existing_skill_symlink(self) -> None:
@@ -187,6 +190,62 @@ class AgentSkillRepoTests(unittest.TestCase):
             self.assertTrue((repo / "skills" / "new-skill" / "SKILL.md").exists())
             self.assertIn("new-skill", (repo / "sources" / "personal-skills.yaml").read_text())
 
+    def test_import_local_skill_supports_grok_and_grok_bundled(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            grok_home = Path(tmp) / "grok"
+            grok_bundled_home = Path(tmp) / "grok" / "bundled"
+            repo.mkdir()
+            write(grok_home / "skills" / "custom" / "SKILL.md", "---\nname: custom\n---\n")
+            write(grok_bundled_home / "skills" / "vendor" / "SKILL.md", "---\nname: vendor\n---\n")
+
+            import_local_skill(
+                repo,
+                source="grok",
+                name="custom",
+                homes={"grok": grok_home, "grok-bundled": grok_bundled_home},
+                dry_run=False,
+            )
+            import_local_skill(
+                repo,
+                source="grok-bundled",
+                name="vendor",
+                homes={"grok": grok_home, "grok-bundled": grok_bundled_home},
+                dry_run=False,
+            )
+
+            self.assertTrue((repo / "skills" / "custom" / "SKILL.md").exists())
+            self.assertTrue((repo / "skills" / "vendor" / "SKILL.md").exists())
+            manifest = (repo / "sources" / "personal-skills.yaml").read_text()
+            self.assertIn("imported_from: grok", manifest)
+            self.assertIn("imported_from: grok-bundled", manifest)
+
+    def test_target_variant_overrides_canonical_owned_skill(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            agents_home = Path(tmp) / "agents"
+            claude_home = Path(tmp) / "claude"
+            grok_home = Path(tmp) / "grok"
+            repo.mkdir()
+            write(agents_home / "skills" / "shared" / "SKILL.md", "canonical\n")
+            write(claude_home / "skills" / "shared" / "SKILL.md", "claude variant\n")
+
+            homes = {"agents": agents_home, "claude": claude_home, "grok": grok_home}
+            import_local_skill(repo, source="agents", name="shared", homes=homes, dry_run=False)
+            import_local_skill(
+                repo,
+                source="claude",
+                name="shared",
+                homes=homes,
+                dry_run=False,
+                variant_for="claude",
+            )
+            bootstrap(repo, targets=["claude", "grok"], homes=homes, dry_run=False)
+
+            self.assertEqual((claude_home / "skills" / "shared" / "SKILL.md").read_text(), "claude variant\n")
+            self.assertEqual((grok_home / "skills" / "shared" / "SKILL.md").read_text(), "canonical\n")
+            self.assertIn("variants: [claude]", (repo / "sources" / "personal-skills.yaml").read_text())
+
     def test_doctor_reports_local_only_and_ignores_exclusions(self) -> None:
         with TemporaryDirectory() as tmp:
             repo = Path(tmp) / "repo"
@@ -204,6 +263,17 @@ class AgentSkillRepoTests(unittest.TestCase):
             self.assertIn("local-only", report["local_only"])
             self.assertNotIn("internal-skill", report["local_only"])
             self.assertEqual(report["repo_only"], [])
+
+    def test_doctor_scans_grok_skills(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            grok_home = Path(tmp) / "grok"
+            repo.mkdir()
+            write(grok_home / "skills" / "grok-only" / "SKILL.md", "---\nname: grok-only\n---\n")
+
+            report = doctor(repo, homes={"grok": grok_home})
+
+            self.assertIn("grok-only", report["local_only"])
 
 
 if __name__ == "__main__":

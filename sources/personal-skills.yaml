@@ -1,10 +1,34 @@
 skills:
+  - name: build-with-ai
+    imported_from: grok-bundled
+    imported_at: 2026-08-14
+  - name: council
+    imported_from: claude
+    imported_at: 2026-08-14
   - name: cv-financial-market-data
     imported_from: codex
     imported_at: 2026-07-05
   - name: cv-options-data
     imported_from: codex
     imported_at: 2026-06-14
+  - name: find-weekly-bay-area-food
+    imported_from: codex
+    imported_at: 2026-08-14
+  - name: herdr
+    imported_from: agents
+    imported_at: 2026-08-14
+  - name: html
+    imported_from: agents
+    imported_at: 2026-08-14
+  - name: html-diagram
+    imported_from: agents
+    imported_at: 2026-08-14
+  - name: html-plan
+    imported_from: agents
+    imported_at: 2026-08-14
+  - name: ima-skill
+    imported_from: codex
+    imported_at: 2026-07-25
   - name: migrate-to-codex
     imported_from: codex
     imported_at: 2026-05-24
@@ -17,9 +41,27 @@ skills:
   - name: peon-ping-toggle
     imported_from: claude
     imported_at: 2026-05-24
+  - name: plannotator-annotate
+    imported_from: agents
+    imported_at: 2026-08-14
+    variants: [claude]
   - name: plannotator-compound
-    imported_from: claude
-    imported_at: 2026-05-24
+    imported_from: agents
+    imported_at: 2026-08-14
+  - name: plannotator-last
+    imported_from: agents
+    imported_at: 2026-08-14
+    variants: [claude]
+  - name: plannotator-review
+    imported_from: agents
+    imported_at: 2026-08-14
+    variants: [claude]
+  - name: plannotator-setup-goal
+    imported_from: agents
+    imported_at: 2026-08-14
+  - name: plannotator-visual-explainer
+    imported_from: agents
+    imported_at: 2026-08-14
   - name: sd-practice
     imported_from: claude
     imported_at: 2026-05-24
