@@ -1,4 +1,4 @@
 interface:
   display_name: "CV Financial Market Data"
-  short_description: "Stock, options, and financial data CLI"
-  default_prompt: "Use $cv-financial-market-data to fetch SPY quotes, option-chain data, and macro context for a market recap."
+  short_description: "ConvexValue options snapshot, SQL, and FMP data"
+  default_prompt: "Use $cv-financial-market-data to fetch AAPL profile, SPY option-chain IV, and treasury rates."

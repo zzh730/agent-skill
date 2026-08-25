@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI helpers for cvserver financial market data."""
+"""CLI for ConvexValue (cvforge) market data."""
 
 import argparse
 import csv
@@ -7,77 +7,62 @@ import json
 import math
 import os
 import re
-import subprocess
 import sys
 import urllib.error
 import urllib.request
-from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
 
 DEFAULT_BASE_URL = "https://tap.convexvalue.com/api/data"
+SYMBOL_RE = re.compile(r"^[A-Z0-9.\-/:]+$")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
+# Official 31 supported snapshot fields.
 FIELDS = [
     "underlying_ticker",
     "ticker",
-    "break_even_price",
+    "contract_type",
+    "expiration_date",
+    "strike_price",
+    "exercise_style",
+    "shares_per_contract",
     "implied_volatility",
     "open_interest",
+    "break_even_price",
     "fair_market_value",
-    "day_change",
-    "day_change_percent",
-    "day_close",
-    "day_high",
-    "day_last_updated",
-    "day_low",
-    "day_open",
-    "day_previous_close",
-    "day_volume",
-    "day_vwap",
-    "contract_type",
-    "exercise_style",
-    "expiration_date",
-    "shares_per_contract",
-    "strike_price",
     "delta",
     "gamma",
     "theta",
     "vega",
-    "ask",
-    "ask_size",
-    "bid",
-    "bid_size",
-    "quote_last_updated",
-    "midpoint",
-    "quote_timeframe",
-    "trade_conditions",
-    "trade_exchange",
-    "trade_price",
-    "trade_sip_timestamp",
-    "trade_size",
-    "trade_timeframe",
-    "underlying_change_to_break_even",
-    "underlying_last_updated",
+    "day_open",
+    "day_high",
+    "day_low",
+    "day_close",
+    "day_previous_close",
+    "day_change",
+    "day_change_percent",
+    "day_volume",
+    "day_vwap",
+    "day_last_updated",
     "underlying_price",
     "underlying_symbol",
+    "underlying_change_to_break_even",
+    "underlying_last_updated",
     "underlying_timeframe",
     "fetched_at",
 ]
 
 DEFAULT_FIELDS = [
+    "contract_type",
     "expiration_date",
     "strike_price",
-    "contract_type",
     "implied_volatility",
+    "open_interest",
     "delta",
     "gamma",
     "theta",
     "vega",
-    "bid",
-    "ask",
-    "midpoint",
-    "open_interest",
     "day_volume",
     "underlying_price",
 ]
@@ -88,15 +73,10 @@ ANALYSIS_FIELDS = [
     "contract_type",
     "implied_volatility",
     "delta",
-    "gamma",
-    "theta",
-    "vega",
     "open_interest",
-    "day_volume",
     "underlying_price",
     "shares_per_contract",
     "ticker",
-    "fetched_at",
 ]
 
 DOCTOR_COLUMNS = [
@@ -107,36 +87,29 @@ DOCTOR_COLUMNS = [
     "contract_type",
 ]
 
-API_HELP = """cvserver financial market data API wrapper examples
+API_HELP = """ConvexValue data API examples
 
-Generic data API call:
-  cv-options call /chains --body '{"symbol":"SPY","params":["expiration_date","strike_price","delta"]}' --format json
-  cv-options call /screen --body '{"columns":["ticker","open_interest"],"filters":[{"field":"underlying_ticker","op":"eq","value":"SPY"}],"limit":5}'
-  cv-options call /query --body '{"sql":"SELECT underlying_ticker, COUNT(*) AS contracts FROM options_snapshots GROUP BY 1 LIMIT 10"}'
-  cv-options call /fmp/stable/quote --body '{"symbol":"SPY"}'
-  cv-options call /mas/aggs --body '{"ticker":"O:SPY260731P00550000","multiplier":1,"timespan":"day","from":"2026-07-01","to":"2026-07-03"}' --rows-key results
+MCP is preferred in an agent session. This CLI posts to REST.
 
-FMP stable endpoints:
-  cv-options fmp quote --param symbol=SPY
-  cv-options fmp historical-chart/5min --param symbol=SPY --param from=2026-07-02 --param to=2026-07-03
-  cv-options fmp treasury-rates
-  cv-options fmp earnings-calendar --param from=2026-07-05 --param to=2026-07-12
-  cv-options fmp income-statement --param symbol=AAPL --param period=annual --param limit=5
-  cv-options fmp etf/holdings --param symbol=SPY
-  cv-options fmp news/stock-latest --param limit=20
+  cv-data doctor --symbol SPY
+  cv-data chain SPY --limit 10
+  cv-data chain I:SPX --fields expiration_date,strike_price,implied_volatility,fair_market_value
+  cv-data screen --symbol SPY --min-oi 5000 --limit 10
+  cv-data query "SELECT underlying_ticker, COUNT(*) AS n FROM options_snapshots GROUP BY 1 ORDER BY 2 DESC LIMIT 20"
+  cv-data fmp profile --param symbol=AAPL
+  cv-data fmp analyst-estimates --param symbol=AAPL --param period=annual
+  cv-data fmp treasury-rates --format json
+  cv-data option-bars O:SPY260116C00400000 --from 2026-01-02 --to 2026-07-02
+  cv-data gamma-levels SPY --top 20
+  cv-data vol-structure SPY
 
-Option contract history:
-  cv-options option-bars O:SPY260731P00550000 --from 2026-07-01 --to 2026-07-03 --timespan day
-  cv-options option-daily O:SPY260731P00550000 --date 2026-07-02
+Raw call:
+  cv-data call /chains --body '{"symbol":"SPY"}' --format json
+  cv-data call /screen --body '{"columns":["ticker","open_interest"],"filters":[{"field":"underlying_ticker","op":"eq","value":"SPY"}],"limit":5}'
 
-Wrapper conveniences:
-  cv-options call /screen --body-file screen.json --format csv
-  echo '{"symbol":"SPY"}' | cv-options fmp quote --body -
-  cv-options fmp quote --param symbol=SPY --dry-run --format json
-
-Configuration:
-  Prefer a running cvforge preview proxy, or set CVSERVER_DATA_BASE / CV_OPTIONS_BASE / CVFORGE_DATA_BASE.
-  For non-local endpoints, set CVSERVER_API_TOKEN / CV_API_TOKEN / CONVEXVALUE_API_TOKEN, or run from a repo with .mcp.json.
+Auth: CVSERVER_API_TOKEN from the current terminal/process environment is used as the Bearer token.
+Legacy fallbacks: CV_API_TOKEN / CONVEXVALUE_API_TOKEN, or a local .mcp.json.
+Override base URL with CVSERVER_DATA_BASE. Historical bars need the Research plan (HTTP 402 otherwise).
 """
 
 
@@ -151,6 +124,13 @@ def normalize_symbol(symbol):
     if symbol.upper().startswith("I:"):
         return "I:" + symbol.split(":", 1)[1].upper()
     return symbol.upper()
+
+
+def checked_symbol(symbol):
+    symbol = normalize_symbol(symbol)
+    if not symbol or len(symbol) > 24 or not SYMBOL_RE.match(symbol):
+        raise RuntimeError(f"invalid symbol: {symbol!r}")
+    return symbol
 
 
 def to_float(value):
@@ -188,14 +168,36 @@ def find_auth_header_from_json(path):
     return None
 
 
+def _bearer(value):
+    if not isinstance(value, str) or not value:
+        return None
+    if value.lower().startswith("bearer "):
+        return value
+    if value.startswith("cv_live_"):
+        return "Bearer " + value
+    return None
+
+
 def find_auth_header_from_toml(path):
     try:
         text = path.read_text()
     except OSError:
         return None
     match = re.search(r'Authorization\s*=\s*"([^"]+)"', text)
-    if match and match.group(1).lower().startswith("bearer "):
-        return match.group(1)
+    if match:
+        header = _bearer(match.group(1))
+        if header:
+            return header
+    match = re.search(r'bearer_token_env_var\s*=\s*"([^"]+)"', text)
+    if match:
+        raw = match.group(1)
+        header = _bearer(raw)
+        if header:
+            return header
+        env_value = os.environ.get(raw)
+        header = _bearer(env_value) if env_value else None
+        if header:
+            return header
     return None
 
 
@@ -230,31 +232,11 @@ def resolve_auth_header(search_start=None):
     return None
 
 
-def discover_cvforge_proxy():
-    try:
-        output = subprocess.check_output(
-            ["lsof", "-nP", "-iTCP", "-sTCP:LISTEN"],
-            stderr=subprocess.DEVNULL,
-            text=True,
-            timeout=2,
-        )
-    except Exception:
-        return None
-    for line in output.splitlines():
-        if not line.lower().startswith("cvforge"):
-            continue
-        match = re.search(r"127\.0\.0\.1:(\d+)", line)
-        if match:
-            return f"http://127.0.0.1:{match.group(1)}/api/data"
-    return None
-
-
 def api_base_url():
     return (
         os.environ.get("CVSERVER_DATA_BASE")
         or os.environ.get("CV_OPTIONS_BASE")
         or os.environ.get("CVFORGE_DATA_BASE")
-        or discover_cvforge_proxy()
         or DEFAULT_BASE_URL
     )
 
@@ -274,9 +256,13 @@ def post_json(path, body, base_url=None, auth_header=None):
     auth = auth_header or (resolve_auth_header() if base_needs_auth(base) else None)
     if base_needs_auth(base) and not auth:
         raise RuntimeError(
-            "Missing cvserver auth. Set CVSERVER_API_TOKEN or run from a cvforge repo with .mcp.json."
+            "Missing API token. Set CVSERVER_API_TOKEN or run from a directory with .mcp.json."
         )
-    headers = {"content-type": "application/json"}
+    headers = {
+        "content-type": "application/json",
+        "accept": "application/json",
+        "user-agent": "cv-financial-market-data/1.0",
+    }
     if auth:
         headers["authorization"] = auth
     req = urllib.request.Request(
@@ -290,58 +276,49 @@ def post_json(path, body, base_url=None, auth_header=None):
             return json.loads(res.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"cvserver {endpoint} failed with HTTP {exc.code}: {detail}") from exc
+        if exc.code == 402:
+            raise RuntimeError(
+                f"{endpoint} needs a higher plan (historical bars need Research): {detail}"
+            ) from exc
+        if exc.code == 429:
+            raise RuntimeError(f"Hourly request limit reached on {endpoint}: {detail}") from exc
+        raise RuntimeError(f"{endpoint} failed with HTTP {exc.code}: {detail}") from exc
 
 
 def call_endpoint(endpoint, body=None, base_url=None):
     return post_json(endpoint, body or {}, base_url=base_url)
 
 
-def get_chain(symbol, fields=None):
-    return post_json("/chains", {"symbol": normalize_symbol(symbol), "params": fields or DEFAULT_FIELDS})
+def get_chain(symbol, fields=None, base_url=None):
+    body = {"symbol": checked_symbol(symbol), "params": fields or DEFAULT_FIELDS}
+    return post_json("/chains", body, base_url=base_url)
 
 
-def screen_contracts(columns, filters, sort=None, limit=None):
+def screen_contracts(columns, filters, sort=None, limit=None, base_url=None):
     body = {"columns": columns or DEFAULT_FIELDS, "filters": filters or []}
     if sort:
         body["sort"] = sort
     if limit is not None:
         body["limit"] = limit
-    return post_json("/screen", body)
+    return post_json("/screen", body, base_url=base_url)
 
 
-def query_sql(sql, max_rows=None):
+def query_sql(sql, max_rows=None, base_url=None):
     body = {"sql": sql}
     if max_rows is not None:
         body["max_rows"] = max_rows
-    return post_json("/query", body)
+    return post_json("/query", body, base_url=base_url)
 
 
-def run_doctor(symbol="SPY", base_url=None, screen_func=None):
-    symbol = normalize_symbol(symbol)
-    base = (base_url or api_base_url()).rstrip("/")
-    filters = [{"field": "underlying_ticker", "op": "eq", "value": symbol}]
-    if screen_func:
-        result = screen_func(DOCTOR_COLUMNS, filters, sort=None, limit=1)
-    else:
-        result = post_json(
-            "/screen",
-            {"columns": DOCTOR_COLUMNS, "filters": filters, "limit": 1},
-            base_url=base,
-        )
-    rows = rows_from_screen(result)
-    first = rows[0] if rows else {}
-    return {
-        "status": "ok" if rows else "empty",
-        "symbol": symbol,
-        "base_url": base,
-        "auth_required": base_needs_auth(base),
-        "row_count": result.get("row_count", len(rows)),
-        "sample_ticker": first.get("ticker"),
-        "sample_expiration": first.get("expiration_date"),
-        "sample_strike": first.get("strike_price"),
-        "sample_contract_type": first.get("contract_type"),
-    }
+def analysis_where(symbol, expiration=None, min_oi=None):
+    parts = [f"underlying_ticker = '{checked_symbol(symbol)}'"]
+    if expiration:
+        if not DATE_RE.match(expiration):
+            raise RuntimeError(f"expiration must be YYYY-MM-DD, got {expiration!r}")
+        parts.append(f"expiration_date = '{expiration}'")
+    if min_oi is not None:
+        parts.append(f"open_interest >= {float(min_oi)}")
+    return " AND ".join(parts)
 
 
 def flatten_chain(chain_response):
@@ -358,7 +335,6 @@ def flatten_chain(chain_response):
                 if not isinstance(values, list):
                     continue
                 row = dict(zip(params, values))
-                row.setdefault("symbol", symbol)
                 row["symbol"] = symbol
                 row["expiration_date"] = row.get("expiration_date") or expiration
                 row["strike_price"] = to_float(row.get("strike_price"))
@@ -394,93 +370,6 @@ def contract_sign(row):
     return 1.0 if str(row.get("contract_type", "")).lower() == "call" else -1.0
 
 
-def compute_gamma_levels(rows):
-    grouped = {}
-    for row in rows:
-        strike = to_float(row.get("strike_price"))
-        gamma = to_float(row.get("gamma"))
-        oi = to_float(row.get("open_interest")) or 0.0
-        spot = row_spot(row)
-        if strike is None or gamma is None or spot is None:
-            continue
-        shares = row_shares(row)
-        exposure = gamma * oi * shares * spot * spot * 0.01
-        bucket = grouped.setdefault(
-            strike,
-            {
-                "strike_price": strike,
-                "net_gamma_exposure_1pct": 0.0,
-                "call_gamma_exposure_1pct": 0.0,
-                "put_gamma_exposure_1pct": 0.0,
-                "total_abs_gamma_exposure_1pct": 0.0,
-                "call_open_interest": 0.0,
-                "put_open_interest": 0.0,
-                "underlying_price": spot,
-            },
-        )
-        bucket["total_abs_gamma_exposure_1pct"] += abs(exposure)
-        if contract_sign(row) > 0:
-            bucket["call_gamma_exposure_1pct"] += exposure
-            bucket["call_open_interest"] += oi
-            bucket["net_gamma_exposure_1pct"] += exposure
-        else:
-            bucket["put_gamma_exposure_1pct"] -= exposure
-            bucket["put_open_interest"] += oi
-            bucket["net_gamma_exposure_1pct"] -= exposure
-    return sorted(grouped.values(), key=lambda item: item["strike_price"])
-
-
-def nearest_atm_rows(rows):
-    by_expiration = defaultdict(list)
-    for row in rows:
-        if row.get("expiration_date"):
-            by_expiration[row.get("expiration_date")].append(row)
-
-    selected = {}
-    for expiration, items in by_expiration.items():
-        with_spot = [row for row in items if row_spot(row) is not None and to_float(row.get("strike_price")) is not None]
-        if with_spot:
-            spot = row_spot(with_spot[0])
-            strike = min(
-                {to_float(row.get("strike_price")) for row in with_spot},
-                key=lambda value: abs(value - spot),
-            )
-            selected[expiration] = [row for row in with_spot if to_float(row.get("strike_price")) == strike]
-            continue
-        with_delta = [row for row in items if to_float(row.get("delta")) is not None]
-        if with_delta:
-            chosen = min(with_delta, key=lambda row: abs(abs(to_float(row.get("delta"))) - 0.5))
-            strike = to_float(chosen.get("strike_price"))
-            selected[expiration] = [row for row in with_delta if to_float(row.get("strike_price")) == strike]
-    return selected
-
-
-def compute_vol_structure(rows, as_of=None):
-    structure = []
-    for expiration, items in nearest_atm_rows(rows).items():
-        ivs = [to_float(row.get("implied_volatility")) for row in items]
-        ivs = [iv for iv in ivs if iv is not None]
-        strikes = [to_float(row.get("strike_price")) for row in items if to_float(row.get("strike_price")) is not None]
-        if not ivs or not strikes:
-            continue
-        calls = [to_float(row.get("implied_volatility")) for row in items if row.get("contract_type") == "call"]
-        puts = [to_float(row.get("implied_volatility")) for row in items if row.get("contract_type") == "put"]
-        calls = [iv for iv in calls if iv is not None]
-        puts = [iv for iv in puts if iv is not None]
-        structure.append(
-            {
-                "expiration_date": expiration,
-                "dte": round(dte_years(expiration, as_of) * 365),
-                "atm_strike": strikes[0],
-                "atm_iv": sum(ivs) / len(ivs),
-                "call_iv": sum(calls) / len(calls) if calls else None,
-                "put_iv": sum(puts) / len(puts) if puts else None,
-                "underlying_price": next((row_spot(row) for row in items if row_spot(row) is not None), None),
-            }
-        )
-    return sorted(structure, key=lambda item: item["expiration_date"])
-
-
 def norm_cdf(value):
     return 0.5 * (1.0 + math.erf(value / math.sqrt(2.0)))
 
@@ -506,7 +395,7 @@ def bs_delta(contract_type, spot, strike, years, volatility, rate=0.045, dividen
     return discount * (norm_cdf(d1) - 1.0)
 
 
-def bs_vanna(contract_type, spot, strike, years, volatility, rate=0.045, dividend_yield=0.0):
+def bs_vanna(spot, strike, years, volatility, rate=0.045, dividend_yield=0.0):
     d1 = bs_d1(spot, strike, years, volatility, rate, dividend_yield)
     if d1 is None:
         return None
@@ -536,7 +425,7 @@ def compute_vanna_exposure(rows, as_of=None, rate=0.045, dividend_yield=0.0):
         if spot is None or strike is None or volatility is None or not expiration:
             continue
         years = max(dte_years(expiration, as_of), 1.0 / (365.0 * 24.0))
-        vanna = bs_vanna(row.get("contract_type"), spot, strike, years, volatility, rate, dividend_yield)
+        vanna = bs_vanna(spot, strike, years, volatility, rate, dividend_yield)
         if vanna is None:
             continue
         exposure = vanna * oi * row_shares(row) * contract_sign(row)
@@ -550,6 +439,7 @@ def compute_vanna_exposure(rows, as_of=None, rate=0.045, dividend_yield=0.0):
                 "call_open_interest": 0.0,
                 "put_open_interest": 0.0,
                 "underlying_price": spot,
+                "note": "local model estimate",
             },
         )
         bucket["net_vanna_exposure"] += exposure
@@ -587,6 +477,7 @@ def compute_charm_exposure(rows, as_of=None, rate=0.045, dividend_yield=0.0):
                 "call_open_interest": 0.0,
                 "put_open_interest": 0.0,
                 "underlying_price": spot,
+                "note": "local model estimate",
             },
         )
         bucket["net_charm_exposure"] += exposure
@@ -693,7 +584,7 @@ def limit_rows(rows, limit, key=None):
 def build_screen_filters(args):
     filters = []
     if args.symbol:
-        filters.append({"field": "underlying_ticker", "op": "eq", "value": normalize_symbol(args.symbol)})
+        filters.append({"field": "underlying_ticker", "op": "eq", "value": checked_symbol(args.symbol)})
     if args.min_oi is not None:
         filters.append({"field": "open_interest", "op": "gte", "value": args.min_oi})
     if args.min_volume is not None:
@@ -711,6 +602,7 @@ def build_screen_filters(args):
 
 def add_common_output_args(parser):
     parser.add_argument("--format", choices=["table", "json", "csv"], default="table")
+    parser.add_argument("--base-url")
 
 
 def add_model_args(parser):
@@ -801,26 +693,52 @@ def command_fields(args):
 
 
 def command_doctor(args):
-    result = run_doctor(args.symbol, args.base_url)
-    columns = [
-        "status",
-        "symbol",
-        "base_url",
-        "auth_required",
-        "row_count",
-        "sample_ticker",
-        "sample_expiration",
-        "sample_strike",
-        "sample_contract_type",
-    ]
-    output_rows([result], args.format, columns)
-    if result["status"] != "ok":
-        raise RuntimeError(f"doctor found no sample contracts for {result['symbol']}")
+    symbol = checked_symbol(args.symbol)
+    base = (args.base_url or api_base_url()).rstrip("/")
+    result = post_json(
+        "/screen",
+        {
+            "columns": DOCTOR_COLUMNS,
+            "filters": [{"field": "underlying_ticker", "op": "eq", "value": symbol}],
+            "limit": 1,
+        },
+        base_url=base,
+    )
+    rows = rows_from_screen(result)
+    first = rows[0] if rows else {}
+    report = {
+        "status": "ok" if rows else "empty",
+        "symbol": symbol,
+        "base_url": base,
+        "auth_required": base_needs_auth(base),
+        "row_count": result.get("row_count", len(rows)),
+        "sample_ticker": first.get("ticker"),
+        "sample_expiration": first.get("expiration_date"),
+        "sample_strike": first.get("strike_price"),
+        "sample_contract_type": first.get("contract_type"),
+    }
+    output_rows(
+        [report],
+        args.format,
+        [
+            "status",
+            "symbol",
+            "base_url",
+            "auth_required",
+            "row_count",
+            "sample_ticker",
+            "sample_expiration",
+            "sample_strike",
+            "sample_contract_type",
+        ],
+    )
+    if report["status"] != "ok":
+        raise RuntimeError(f"doctor found no sample contracts for {symbol}")
 
 
 def command_chain(args):
-    fields = parse_csv(args.fields) or DEFAULT_FIELDS
-    result = get_chain(args.symbol, fields)
+    fields = parse_csv(args.fields) or None
+    result = get_chain(args.symbol, fields, base_url=args.base_url)
     rows = flatten_chain(result)
     rows = filter_rows(rows, args.expiration, args.min_oi)
     rows = rows[: args.limit] if args.limit is not None else rows
@@ -839,15 +757,18 @@ def command_screen(args):
         "gamma",
         "open_interest",
         "day_volume",
+        "fair_market_value",
         "underlying_price",
     ]
     sort = [{"field": args.sort, "direction": args.direction}] if args.sort else None
-    result = screen_contracts(columns, build_screen_filters(args), sort=sort, limit=args.limit)
+    result = screen_contracts(
+        columns, build_screen_filters(args), sort=sort, limit=args.limit, base_url=args.base_url
+    )
     output_rows(rows_from_screen(result), args.format, columns)
 
 
 def command_query(args):
-    result = query_sql(args.sql, args.max_rows)
+    result = query_sql(args.sql, args.max_rows, base_url=args.base_url)
     rows = result.get("rows") or []
     output_rows(rows, args.format)
 
@@ -903,25 +824,34 @@ def command_api_help(_args):
     print(API_HELP.rstrip())
 
 
-def load_analysis_rows(symbol, expiration=None, min_oi=None):
-    result = get_chain(symbol, ANALYSIS_FIELDS)
-    rows = flatten_chain(result)
-    return filter_rows(rows, expiration=expiration, min_open_interest=min_oi)
-
-
 def command_gamma_levels(args):
-    rows = load_analysis_rows(args.symbol, args.expiration, args.min_oi)
-    levels = compute_gamma_levels(rows)
-    levels = limit_rows(levels, args.top, "net_gamma_exposure_1pct")
+    where = analysis_where(args.symbol, args.expiration, args.min_oi)
+    sql = f"""
+SELECT strike_price,
+       SUM(gamma * open_interest * shares_per_contract *
+           CASE WHEN contract_type = 'call' THEN 1 ELSE -1 END) AS net_gamma,
+       SUM(CASE WHEN contract_type = 'call'
+                THEN gamma * open_interest * shares_per_contract ELSE 0 END) AS call_gamma,
+       SUM(CASE WHEN contract_type = 'put'
+                THEN -gamma * open_interest * shares_per_contract ELSE 0 END) AS put_gamma,
+       SUM(CASE WHEN contract_type = 'call' THEN open_interest ELSE 0 END) AS call_open_interest,
+       SUM(CASE WHEN contract_type = 'put' THEN open_interest ELSE 0 END) AS put_open_interest,
+       ANY_VALUE(underlying_price) AS underlying_price
+FROM options_snapshots
+WHERE {where}
+GROUP BY strike_price
+ORDER BY strike_price
+"""
+    rows = query_sql(sql, base_url=args.base_url).get("rows") or []
+    rows = limit_rows(rows, args.top, "net_gamma")
     output_rows(
-        levels,
+        rows,
         args.format,
         [
             "strike_price",
-            "net_gamma_exposure_1pct",
-            "call_gamma_exposure_1pct",
-            "put_gamma_exposure_1pct",
-            "total_abs_gamma_exposure_1pct",
+            "net_gamma",
+            "call_gamma",
+            "put_gamma",
             "call_open_interest",
             "put_open_interest",
             "underlying_price",
@@ -930,17 +860,34 @@ def command_gamma_levels(args):
 
 
 def command_vol_structure(args):
-    rows = load_analysis_rows(args.symbol, args.expiration, args.min_oi)
-    structure = compute_vol_structure(rows, as_of=args.as_of)
-    output_rows(
-        structure,
-        args.format,
-        ["expiration_date", "dte", "atm_strike", "atm_iv", "call_iv", "put_iv", "underlying_price"],
-    )
+    where = analysis_where(args.symbol, args.expiration, args.min_oi)
+    sql = f"""
+SELECT expiration_date,
+       AVG(implied_volatility) FILTER (WHERE ABS(delta) BETWEEN 0.45 AND 0.55) AS atm_iv,
+       AVG(implied_volatility) FILTER (
+           WHERE contract_type = 'call' AND ABS(delta) BETWEEN 0.45 AND 0.55
+       ) AS call_iv,
+       AVG(implied_volatility) FILTER (
+           WHERE contract_type = 'put' AND ABS(delta) BETWEEN 0.45 AND 0.55
+       ) AS put_iv,
+       COUNT(*) FILTER (WHERE ABS(delta) BETWEEN 0.45 AND 0.55) AS atm_contracts
+FROM options_snapshots
+WHERE {where}
+GROUP BY expiration_date
+ORDER BY expiration_date
+"""
+    rows = query_sql(sql, base_url=args.base_url).get("rows") or []
+    output_rows(rows, args.format, ["expiration_date", "atm_iv", "call_iv", "put_iv", "atm_contracts"])
+
+
+def load_analysis_rows(symbol, expiration=None, min_oi=None, base_url=None):
+    result = get_chain(symbol, ANALYSIS_FIELDS, base_url=base_url)
+    rows = flatten_chain(result)
+    return filter_rows(rows, expiration=expiration, min_open_interest=min_oi)
 
 
 def command_vanna_exposure(args):
-    rows = load_analysis_rows(args.symbol, args.expiration, args.min_oi)
+    rows = load_analysis_rows(args.symbol, args.expiration, args.min_oi, base_url=args.base_url)
     exposure = compute_vanna_exposure(rows, as_of=args.as_of, rate=args.rate, dividend_yield=args.dividend_yield)
     exposure = limit_rows(exposure, args.top, "net_vanna_exposure")
     output_rows(
@@ -954,12 +901,13 @@ def command_vanna_exposure(args):
             "call_open_interest",
             "put_open_interest",
             "underlying_price",
+            "note",
         ],
     )
 
 
 def command_charm_exposure(args):
-    rows = load_analysis_rows(args.symbol, args.expiration, args.min_oi)
+    rows = load_analysis_rows(args.symbol, args.expiration, args.min_oi, base_url=args.base_url)
     exposure = compute_charm_exposure(rows, as_of=args.as_of, rate=args.rate, dividend_yield=args.dividend_yield)
     exposure = limit_rows(exposure, args.top, "net_charm_exposure")
     output_rows(
@@ -973,32 +921,32 @@ def command_charm_exposure(args):
             "call_open_interest",
             "put_open_interest",
             "underlying_price",
+            "note",
         ],
     )
 
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        prog="cv-options",
-        description="Query and analyze cvserver stock, options, and financial market data.",
+        prog="cv-data",
+        description="Query ConvexValue options snapshot, SQL, historical bars, and FMP data.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Run 'cv-options api-help' for raw API wrapper examples.",
+        epilog="Run 'cv-data api-help' for more examples.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    fields = subparsers.add_parser("fields", help="List supported fields.")
+    fields = subparsers.add_parser("fields", help="List the 31 supported snapshot fields.")
     add_common_output_args(fields)
     fields.set_defaults(func=command_fields)
 
-    doctor = subparsers.add_parser("doctor", help="Verify that the cvserver data path works.")
+    doctor = subparsers.add_parser("doctor", help="Verify that the data path works.")
     doctor.add_argument("--symbol", default="SPY")
-    doctor.add_argument("--base-url")
     add_common_output_args(doctor)
     doctor.set_defaults(func=command_doctor)
 
     chain = subparsers.add_parser("chain", help="Fetch and flatten an option chain.")
     chain.add_argument("symbol")
-    chain.add_argument("--fields", default="")
+    chain.add_argument("--fields", default="", help="Comma-separated snapshot fields. Omit for the server default.")
     chain.add_argument("--expiration")
     chain.add_argument("--min-oi", type=float)
     chain.add_argument("--limit", type=int, default=25)
@@ -1026,50 +974,30 @@ def build_parser():
     add_common_output_args(query)
     query.set_defaults(func=command_query)
 
-    call = subparsers.add_parser(
-        "call",
-        help="POST any /api/data endpoint with a JSON body.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""Examples:
-  cv-options call /chains --body '{"symbol":"SPY","params":["delta","gamma"]}'
-  cv-options call /screen --body-file screen.json --format csv
-  echo '{"sql":"SELECT COUNT(*) AS n FROM options_snapshots"}' | cv-options call /query --body - --format json
-""",
-    )
-    call.add_argument("endpoint", help='Endpoint path, e.g. "/chains", "/screen", "/query", "/fmp/stable/quote".')
+    call = subparsers.add_parser("call", help="POST any /api/data endpoint with a JSON body.")
+    call.add_argument("endpoint", help='Endpoint path, e.g. "/chains" or "/fmp/stable/profile".')
     call.add_argument("--body", help='JSON request body. Use "-" to read JSON from stdin.')
-    call.add_argument("--body-file", help='File containing a JSON request body. Use "-" to read JSON from stdin.')
-    call.add_argument("--param", action="append", default=[], help="Merge one key=value into the JSON body. Value may be JSON.")
-    call.add_argument("--rows-key", help="For table/csv output, render a list nested under this response key.")
-    call.add_argument("--base-url", help="Override data API base URL, e.g. http://127.0.0.1:53903/api/data.")
-    call.add_argument("--dry-run", action="store_true", help="Print the endpoint/body/base URL without sending the request.")
+    call.add_argument("--body-file")
+    call.add_argument("--param", action="append", default=[])
+    call.add_argument("--rows-key")
+    call.add_argument("--dry-run", action="store_true")
     add_common_output_args(call)
     call.set_defaults(func=command_call)
 
-    fmp = subparsers.add_parser(
-        "fmp",
-        help="Call an FMP /stable endpoint through the cvserver proxy.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""Examples:
-  cv-options fmp quote --param symbol=SPY
-  cv-options fmp historical-chart/5min --param symbol=SPY --param from=2026-07-02 --param to=2026-07-03
-  cv-options fmp treasury-rates --format json
-""",
-    )
-    fmp.add_argument("endpoint", help='FMP stable endpoint, e.g. "quote", "historical-chart/5min", "treasury-rates".')
-    fmp.add_argument("--params-json", "--body", dest="params_json", help='JSON params object. Use "-" to read JSON from stdin.')
-    fmp.add_argument("--params-file", "--body-file", dest="params_file", help='File containing JSON params. Use "-" for stdin.')
-    fmp.add_argument("--param", action="append", default=[], help="Merge one key=value into the params. Value may be JSON.")
-    fmp.add_argument("--rows-key", help="For table/csv output, render a list nested under this response key.")
-    fmp.add_argument("--base-url", help="Override data API base URL.")
-    fmp.add_argument("--dry-run", action="store_true", help="Print the endpoint/body/base URL without sending the request.")
+    fmp = subparsers.add_parser("fmp", help="Call an allowlisted FMP /stable endpoint.")
+    fmp.add_argument("endpoint", help='FMP path, e.g. "profile" or "historical-chart/5min".')
+    fmp.add_argument("--params-json", "--body", dest="params_json")
+    fmp.add_argument("--params-file", "--body-file", dest="params_file")
+    fmp.add_argument("--param", action="append", default=[])
+    fmp.add_argument("--rows-key")
+    fmp.add_argument("--dry-run", action="store_true")
     add_common_output_args(fmp)
     fmp.set_defaults(func=command_fmp)
 
-    option_bars = subparsers.add_parser("option-bars", help="Fetch historical OHLCV bars for one option contract.")
-    option_bars.add_argument("ticker", help='Option ticker, e.g. "O:SPY260731P00550000".')
-    option_bars.add_argument("--from", dest="from_date", required=True, help="Window start: YYYY-MM-DD or epoch milliseconds.")
-    option_bars.add_argument("--to", dest="to_date", required=True, help="Window end: YYYY-MM-DD or epoch milliseconds.")
+    option_bars = subparsers.add_parser("option-bars", help="Historical OHLC for one option contract (Research).")
+    option_bars.add_argument("ticker")
+    option_bars.add_argument("--from", dest="from_date", required=True)
+    option_bars.add_argument("--to", dest="to_date", required=True)
     option_bars.add_argument("--multiplier", type=int, default=1)
     option_bars.add_argument(
         "--timespan",
@@ -1078,25 +1006,23 @@ def build_parser():
     )
     option_bars.add_argument("--sort", choices=["asc", "desc"], default="asc")
     option_bars.add_argument("--limit", type=int)
-    option_bars.add_argument("--unadjusted", action="store_true", help="Request unadjusted bars.")
-    option_bars.add_argument("--base-url", help="Override data API base URL.")
-    option_bars.add_argument("--dry-run", action="store_true", help="Print the endpoint/body/base URL without sending the request.")
+    option_bars.add_argument("--unadjusted", action="store_true")
+    option_bars.add_argument("--dry-run", action="store_true")
     add_common_output_args(option_bars)
     option_bars.set_defaults(func=command_option_bars)
 
-    option_daily = subparsers.add_parser("option-daily", help="Fetch one date of OHLCV data for one option contract.")
-    option_daily.add_argument("ticker", help='Option ticker, e.g. "O:SPY260731P00550000".')
-    option_daily.add_argument("--date", required=True, help="Trading date: YYYY-MM-DD.")
-    option_daily.add_argument("--unadjusted", action="store_true", help="Request unadjusted data.")
-    option_daily.add_argument("--base-url", help="Override data API base URL.")
-    option_daily.add_argument("--dry-run", action="store_true", help="Print the endpoint/body/base URL without sending the request.")
+    option_daily = subparsers.add_parser("option-daily", help="One trading day for one option contract (Research).")
+    option_daily.add_argument("ticker")
+    option_daily.add_argument("--date", required=True)
+    option_daily.add_argument("--unadjusted", action="store_true")
+    option_daily.add_argument("--dry-run", action="store_true")
     add_common_output_args(option_daily)
     option_daily.set_defaults(func=command_option_daily)
 
-    api_help = subparsers.add_parser("api-help", help="Show raw API wrapper examples.")
+    api_help = subparsers.add_parser("api-help", help="Show API examples.")
     api_help.set_defaults(func=command_api_help)
 
-    gamma = subparsers.add_parser("gamma-levels", help="Compute signed gamma levels by strike.")
+    gamma = subparsers.add_parser("gamma-levels", help="Official signed net gamma by strike (SQL).")
     gamma.add_argument("symbol")
     gamma.add_argument("--expiration")
     gamma.add_argument("--min-oi", type=float)
@@ -1104,15 +1030,14 @@ def build_parser():
     add_common_output_args(gamma)
     gamma.set_defaults(func=command_gamma_levels)
 
-    vol = subparsers.add_parser("vol-structure", help="Compute ATM IV term structure.")
+    vol = subparsers.add_parser("vol-structure", help="Official 50-delta ATM IV by expiration (SQL).")
     vol.add_argument("symbol")
     vol.add_argument("--expiration")
     vol.add_argument("--min-oi", type=float)
-    add_model_args(vol)
     add_common_output_args(vol)
     vol.set_defaults(func=command_vol_structure)
 
-    vanna = subparsers.add_parser("vanna-exposure", help="Compute Black-Scholes vanna exposure by strike.")
+    vanna = subparsers.add_parser("vanna-exposure", help="Local Black-Scholes vanna estimate by strike.")
     vanna.add_argument("symbol")
     vanna.add_argument("--expiration")
     vanna.add_argument("--min-oi", type=float)
@@ -1121,7 +1046,7 @@ def build_parser():
     add_common_output_args(vanna)
     vanna.set_defaults(func=command_vanna_exposure)
 
-    charm = subparsers.add_parser("charm-exposure", help="Compute one-day delta-decay exposure by strike.")
+    charm = subparsers.add_parser("charm-exposure", help="Local one-day delta-decay estimate by strike.")
     charm.add_argument("symbol")
     charm.add_argument("--expiration")
     charm.add_argument("--min-oi", type=float)
