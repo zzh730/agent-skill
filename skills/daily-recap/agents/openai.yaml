@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Recap"
+  short_description: "Review agent work, Slack replies, and meeting feedback"
+  default_prompt: "Use $daily-recap to review today’s agent sessions, Slack conversations, and Shadow meetings, then give me an evidence-backed reflection and next actions."

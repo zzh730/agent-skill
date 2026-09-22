@@ -11,6 +11,9 @@ skills:
   - name: cv-options-data
     imported_from: codex
     imported_at: 2026-06-14
+  - name: daily-recap
+    imported_from: codex
+    imported_at: 2026-09-21
   - name: find-weekly-bay-area-food
     imported_from: codex
     imported_at: 2026-08-14
