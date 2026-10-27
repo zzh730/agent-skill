@@ -1,0 +1,14 @@
+flowchart LR
+  client([Mobile app])
+  subgraph api[API service]
+    handler[HTTP handler]
+    cache[Session cache<br/>in-process]:::removed
+  end
+  db[(Postgres)]
+
+  client -->|HTTPS| handler
+  handler e1@--> cache
+  handler -->|SQL| db
+
+  class e1 removed
+  classDef removed fill:#ffebe9,stroke:#cf222e,color:#59636e,stroke-dasharray:6 4

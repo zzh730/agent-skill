@@ -1,0 +1,9 @@
+{
+  "name": "pele-diagram-skill-deps",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "pele": "1.12.0"
+  }
+}

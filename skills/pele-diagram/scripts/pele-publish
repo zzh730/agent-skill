@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Publish rendered diagrams to an image branch in the same GitHub repository.
+
+The files go to a separate orphan branch, so they never appear in a pull
+request diff. The script builds the commit with git plumbing and a temporary
+index: it does not touch HEAD, the index, or the working tree of the checkout.
+Each URL names a commit SHA, so a later publish never changes an old image.
+Anyone who can read the repository can see the images, and nobody else can.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+DEFAULT_BRANCH = "pr-diagrams"
+MAX_ATTEMPTS = 3
+
+
+class PublishError(RuntimeError):
+    pass
+
+
+def git(*args: str, env: dict[str, str] | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(["git", *args], capture_output=True, text=True, env=env)
+    if check and result.returncode != 0:
+        raise PublishError(f"git {' '.join(args)} failed:\n{result.stderr.strip()}")
+    return result
+
+
+def github_repo(remote: str) -> str:
+    url = git("config", "--get", f"remote.{remote}.url").stdout.strip()
+    match = re.match(r"^(?:https://github\.com/|git@github\.com:|ssh://git@github\.com/)([^/]+/[^/]+?)(?:\.git)?/?$", url)
+    if not match:
+        raise PublishError(f"remote {remote} is not a github.com repository: {url}")
+    return match.group(1)
+
+
+def asset_branch(explicit: str | None) -> str:
+    if explicit:
+        return explicit
+    configured = git("config", "--get", "pele.assetBranch", check=False).stdout.strip()
+    return os.environ.get("PELE_ASSET_BRANCH") or configured or DEFAULT_BRANCH
+
+
+def default_key() -> str:
+    branch = git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    if branch == "HEAD":
+        branch = "detached-" + git("rev-parse", "--short", "HEAD").stdout.strip()
+    return branch
+
+
+def clean_key(key: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", key).strip("-.")
+    if not cleaned:
+        raise PublishError(f"invalid --key: {key!r}")
+    return cleaned
+
+
+def svg_size(path: Path) -> dict[str, int]:
+    head = path.read_text(errors="replace")[:2000]
+    size = {}
+    for name in ("width", "height"):
+        match = re.search(rf'<svg\b[^>]*\b{name}="([\d.]+)"', head)
+        if match:
+            size[name] = round(float(match.group(1)))
+    return size
+
+
+def remote_tip(remote: str, branch: str) -> str | None:
+    out = git("ls-remote", "--heads", remote, f"refs/heads/{branch}").stdout.split()
+    return out[0] if out else None
+
+
+def build_commit(files: list[Path], key: str, tip: str | None, remote: str) -> str:
+    if tip:
+        git("fetch", "--quiet", "--no-tags", "--no-write-fetch-head", remote, tip)
+    with tempfile.TemporaryDirectory() as tmp:
+        env = {**os.environ, "GIT_INDEX_FILE": str(Path(tmp) / "index")}
+        if tip:
+            git("read-tree", tip, env=env)
+        for path in files:
+            blob = git("hash-object", "-w", str(path)).stdout.strip()
+            git("update-index", "--add", "--cacheinfo", f"100644,{blob},{key}/{path.name}", env=env)
+        tree = git("write-tree", env=env).stdout.strip()
+    if tip and git("rev-parse", f"{tip}^{{tree}}").stdout.strip() == tree:
+        return tip
+    parents = ["-p", tip] if tip else []
+    message = f"Add diagrams for {key}"
+    return git("commit-tree", tree, *parents, "-m", message).stdout.strip()
+
+
+def publish(files: list[Path], *, remote: str, branch: str, key: str, run_hooks: bool) -> str:
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        tip = remote_tip(remote, branch)
+        commit = build_commit(files, key, tip, remote)
+        if commit == tip:
+            return commit
+        # Pre-push hooks check the code at HEAD of the checkout, not this image
+        # commit, so they only add cost or fail for unrelated reasons.
+        push = ["push", "--quiet"] + ([] if run_hooks else ["--no-verify"]) + [remote, f"{commit}:refs/heads/{branch}"]
+        result = git(*push, check=False)
+        if result.returncode == 0:
+            return commit
+        if attempt == MAX_ATTEMPTS or "rejected" not in result.stderr:
+            output = "\n".join(part.strip() for part in (result.stdout, result.stderr) if part.strip())
+            raise PublishError(f"push to {branch} failed:\n{output}")
+    raise AssertionError("unreachable")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("files", nargs="+", type=Path, help="rendered .svg or .png files")
+    parser.add_argument("--remote", default="origin", help="GitHub remote of the pull request (default: origin)")
+    parser.add_argument("--branch", help="image branch (default: git config pele.assetBranch, $PELE_ASSET_BRANCH, or pr-diagrams)")
+    parser.add_argument("--key", help="folder inside the image branch (default: current branch name)")
+    parser.add_argument("--run-hooks", action="store_true", help="run pre-push hooks (skipped by default; the image commit holds no code)")
+    parser.add_argument("--dry-run", action="store_true", help="print the plan; write and push nothing")
+    parser.add_argument("--json", action="store_true", help="print JSON instead of Markdown")
+    args = parser.parse_args()
+
+    try:
+        missing = [str(path) for path in args.files if not path.is_file()]
+        if missing:
+            raise PublishError(f"not a file: {', '.join(missing)}")
+        names = [path.name for path in args.files]
+        if len(set(names)) != len(names):
+            raise PublishError("two inputs share a file name; rename one")
+        repo = github_repo(args.remote)
+        branch = asset_branch(args.branch)
+        key = clean_key(args.key or default_key())
+
+        if args.dry_run:
+            for path in args.files:
+                print(f"would publish {path} -> {repo}@{branch}:{key}/{path.name}")
+            return 0
+
+        commit = publish(args.files, remote=args.remote, branch=branch, key=key, run_hooks=args.run_hooks)
+    except PublishError as error:
+        print(f"pele-publish: {error}", file=sys.stderr)
+        return 1
+
+    images = []
+    for path in args.files:
+        image = {
+            "file": str(path),
+            "url": f"https://github.com/{repo}/raw/{commit}/{key}/{path.name}",
+            **(svg_size(path) if path.suffix == ".svg" else {}),
+        }
+        images.append(image)
+
+    if args.json:
+        print(json.dumps({"repo": repo, "branch": branch, "commit": commit, "images": images}, indent=2))
+    else:
+        for image in images:
+            print(f"![{Path(image['file']).stem}]({image['url']})")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

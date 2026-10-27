@@ -44,6 +44,9 @@ skills:
   - name: peon-ping-toggle
     imported_from: claude
     imported_at: 2026-05-24
+  - name: pele-diagram
+    imported_from: repo
+    imported_at: 2026-10-27
   - name: plannotator-annotate
     imported_from: agents
     imported_at: 2026-08-14
@@ -65,6 +68,9 @@ skills:
   - name: plannotator-visual-explainer
     imported_from: agents
     imported_at: 2026-08-14
+  - name: pr-description
+    imported_from: repo
+    imported_at: 2026-10-27
   - name: sd-practice
     imported_from: claude
     imported_at: 2026-05-24
