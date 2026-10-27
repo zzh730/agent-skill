@@ -47,9 +47,9 @@ description: Render system, architecture, and request-flow diagrams from Mermaid
 - Show only what the reader needs: the components that change and one hop of neighbors. Aim for 12 nodes or fewer. Split a bigger picture into two diagrams.
 - Name nodes by role in plain words (`Session store`), and add the technology on a second line (`Session store<br/>Redis`) when it matters.
 - Label each edge with the call or protocol (`HTTPS`, `publish order.created`, `SQL`). Leave an edge unlabeled only when the meaning is obvious.
-- Use `subgraph` for a process, service, or trust boundary. Do not nest more than two levels.
+- Use `subgraph` for a process, service, or trust boundary. Do not nest more than two levels, and do not wrap a single node in a subgraph.
 - Keep labels under about 40 characters per line; use `<br/>` to wrap.
-- Prefer `flowchart LR`. Switch to `TB` when the render is wider than about 1000 px, because GitHub scales wide images down.
+- Keep the render 900 px wide or less. A GitHub PR body is 780 to 880 px wide, and a wider image shrinks until its text is hard to read. To make a diagram narrower, shorten edge labels, remove nodes that do not change, or split it.
 
 ## Show a change
 
@@ -81,5 +81,7 @@ Keep the `classDef` lines in the source, so it shows the same colors in any othe
 - `classDef` values must be plain colors; `var(...)` is a syntax error.
 - `class` on edges works only for edges that have an ID (`a e1@--> b`).
 - Label widths come from a built-in width table, not a real font, so a very long label can overflow its box. The PNG check catches this.
+- In `flowchart TB`, an edge that enters a subgraph from above crosses the subgraph title. Use `LR` for diagrams with subgraphs.
+- `direction` inside a subgraph has no effect when a node in it links to a node outside it.
 - Icons in `architecture-beta`: `cloud`, `database`, `disk`, `internet`, `server` work without a resolver.
 - Limits: 50,000 source characters and 5,000 edges per diagram.

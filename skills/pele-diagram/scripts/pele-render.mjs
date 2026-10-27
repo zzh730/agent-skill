@@ -164,8 +164,8 @@ function sanitizeId(name) {
 
 function warningsFor(result, source) {
   const warnings = [];
-  if (result.width > 1000) {
-    warnings.push(`width ${Math.round(result.width)}px: GitHub scales it down; prefer TB or split the diagram`);
+  if (result.width > 900) {
+    warnings.push(`width ${Math.round(result.width)}px: a GitHub PR body is 780-880px wide, so the text shrinks; shorten labels, drop nodes, or split the diagram`);
   }
   const nodeCount = (result.svg.match(/class="pele-node\b/g) ?? []).length;
   if (nodeCount > 25) warnings.push(`${nodeCount} nodes: hard to read; show only the components that change`);
