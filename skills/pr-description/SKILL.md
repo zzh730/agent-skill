@@ -12,7 +12,7 @@ Write a short PR body that a reviewer who has not seen the conversation can act 
 ## 1. Collect facts
 
 - Rules first. A repository PR template (`.github/pull_request_template.md`) or `AGENTS.md` / `CLAUDE.md` rules about PR text override this skill where they conflict. On a machine with `~/.codex/LESSONS.md` and `~/.codex/references/pr-acceptance.md`, read them: they set what counts as verification evidence.
-- PR state: `gh pr view --json number,url,title,body,baseRefName,headRefOid`. Save the body you read: it is the baseline for the edit check in step 5.
+- PR state: `gh pr view --json number,url,title,baseRefName,headRefOid`. Save the body with `gh pr view <pr> --json body --jq .body > baseline.md`: it is the baseline for the edit check in step 5.
 - Change: `git log --oneline <base>..HEAD`, `git diff <base>...HEAD --stat`, then read the hunks that carry the behavior change. Find the linked issue and earlier PRs.
 
 ## 2. Decide whether the PR needs diagrams
@@ -104,9 +104,10 @@ Existing PR: other people and agents edit PR bodies. Compare the live body with 
 gh pr view <pr> --json body --jq .body > live.md
 diff -q live.md baseline.md || { echo "PR body changed since you read it; merge the edits into body.md first"; exit 1; }
 gh pr edit <pr> --body-file body.md
+gh pr view <pr> --json body --jq .body > baseline.md
 ```
 
-After you publish, read the body back with `gh pr view <pr> --json body` and confirm that each image URL is in it.
+Always write `baseline.md` with the same `gh pr view` command as `live.md`, never by copying `body.md`: `--jq` adds a newline, so a copy never matches. The last line also reads the body back; confirm that each image URL is in it.
 
 ## 6. Keep the diagrams current
 
