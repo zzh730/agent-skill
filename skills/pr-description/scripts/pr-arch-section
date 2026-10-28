@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""Render, publish, and print the before-and-after architecture section of a PR body.
+
+Run it inside the checkout of the pull request, after you have looked at the
+PNG renders. It calls the sibling pele-diagram skill: pele-render writes the
+SVG files next to each source, and pele-publish pushes them to the image
+branch of the same repository. The Markdown goes to stdout.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+PELE_DIR = Path(__file__).resolve().parents[2] / "pele-diagram"
+SIDE_BY_SIDE_MAX_WIDTH = 450
+LEGEND = {
+    "added": "Green: added.",
+    "removed": "Red, dashed: removed.",
+    "changed": "Amber: changed.",
+}
+
+
+def run_json(args: list[str]) -> object:
+    result = subprocess.run(args, capture_output=True, text=True)
+    if result.returncode != 0:
+        sys.stderr.write(result.stdout + result.stderr)
+        raise SystemExit(result.returncode)
+    return json.loads(result.stdout)
+
+
+def classes_used(source: str) -> set[str]:
+    return {
+        name
+        for name in LEGEND
+        if re.search(rf":::{name}\b", source) or re.search(rf"^\s*class\s+\S+\s+{name}\b", source, re.M)
+    }
+
+
+def image(alt: str, url: str) -> str:
+    return f"![{alt}]({url})"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--before", type=Path, help="before.mmd; omit when the PR adds a new system")
+    parser.add_argument("--after", type=Path, required=True, help="after.mmd")
+    parser.add_argument("--before-alt", help="one sentence that describes the old flow")
+    parser.add_argument("--after-alt", required=True, help="one sentence that describes the new flow")
+    parser.add_argument("--remote", default="origin")
+    parser.add_argument("--branch", help="image branch; see pele-publish --help")
+    parser.add_argument("--key", help="folder inside the image branch (default: current branch name)")
+    args = parser.parse_args()
+    if args.before and not args.before_alt:
+        parser.error("--before needs --before-alt")
+
+    sources = [path for path in (args.before, args.after) if path]
+    render = run_json([str(PELE_DIR / "scripts" / "pele-render"), "--json", *map(str, sources)])
+    svgs = [item["svg"] for item in render]
+
+    publish_args = [str(PELE_DIR / "scripts" / "pele-publish"), "--json", "--remote", args.remote]
+    if args.branch:
+        publish_args += ["--branch", args.branch]
+    if args.key:
+        publish_args += ["--key", args.key]
+    published = run_json([*publish_args, *svgs])["images"]
+
+    after = published[-1]
+    before = published[0] if args.before else None
+    found = {name for path in sources for name in classes_used(path.read_text())}
+    used = [name for name in LEGEND if name in found]
+
+    lines = []
+    if before and max(before.get("width", 0), after.get("width", 0)) <= SIDE_BY_SIDE_MAX_WIDTH:
+        lines += [
+            "| Before | After |",
+            "| --- | --- |",
+            f"| {image('Before: ' + args.before_alt, before['url'])} | {image('After: ' + args.after_alt, after['url'])} |",
+        ]
+    else:
+        if before:
+            lines += ["**Before**", "", image(f"Before: {args.before_alt}", before["url"]), ""]
+        lines += ["**After**", "", image(f"After: {args.after_alt}", after["url"])]
+    if used:
+        lines += ["", "<sub>" + " ".join(LEGEND[name] for name in used) + "</sub>"]
+
+    lines += ["", "<details>", "<summary>Diagram source</summary>", ""]
+    for path in sources:
+        lines += [f"`{path.name}`", "", "```text", path.read_text().rstrip(), "```", ""]
+    lines += ["</details>"]
+    print("\n".join(lines))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

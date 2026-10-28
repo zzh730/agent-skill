@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Render Mermaid files to themed SVG (and PNG) with Pele.
+# Dependencies install once into a cache directory, outside the skill copy.
+set -euo pipefail
+
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEPS_DIR="${PELE_DIAGRAM_DEPS:-${XDG_CACHE_HOME:-$HOME/.cache}/pele-diagram}"
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pele-render: node >= 20 is required" >&2
+  exit 2
+fi
+
+if ! cmp -s "$SKILL_DIR/package.json" "$DEPS_DIR/package.json" || [ ! -d "$DEPS_DIR/node_modules/pele" ]; then
+  mkdir -p "$DEPS_DIR"
+  cp "$SKILL_DIR/package.json" "$DEPS_DIR/package.json"
+  echo "pele-render: installing dependencies into $DEPS_DIR" >&2
+  npm install --prefix "$DEPS_DIR" --no-audit --no-fund --loglevel=error >&2
+fi
+
+PELE_DIAGRAM_DEPS="$DEPS_DIR" exec node "$SKILL_DIR/scripts/pele-render.mjs" "$@"

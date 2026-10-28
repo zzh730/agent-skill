@@ -1,0 +1,17 @@
+flowchart LR
+  client([Mobile app])
+  subgraph api[API service]
+    handler[HTTP handler]:::changed
+  end
+  redis[(Redis<br/>session store)]:::added
+  worker[Expiry worker]:::added
+  db[(Postgres)]
+
+  client -->|HTTPS| handler
+  handler e1@-->|GET / SET| redis
+  handler -->|SQL| db
+  worker e2@-->|SCAN + DEL| redis
+
+  class e1,e2 added
+  classDef added stroke:#2da44e,stroke-width:3px
+  classDef changed stroke:#bf8700,stroke-width:3px
