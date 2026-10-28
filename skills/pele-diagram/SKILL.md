@@ -12,7 +12,7 @@ description: Render system, architecture, and request-flow diagrams from Mermaid
 | Script | What it does |
 | --- | --- |
 | `<skill-dir>/scripts/pele-render` | Renders `.mmd` files to `.svg`, and with `--png` to `.png` and `.dark.png`. Installs pinned `pele` and `@resvg/resvg-js` into `~/.cache/pele-diagram` on first run. Needs Node 20 or later. |
-| `<skill-dir>/scripts/pele-publish` | Pushes rendered files to an image branch in the same GitHub repository and prints image Markdown. Needs `git` and push access. |
+| `<skill-dir>/scripts/pele-publish` | Pushes rendered files to an image branch in the same GitHub repository and prints image Markdown. Needs `git`, push access, and `gh` logged in. |
 
 ## Workflow
 
@@ -39,6 +39,7 @@ description: Render system, architecture, and request-flow diagrams from Mermaid
 - `pele-publish` writes to an orphan branch (default `pr-diagrams`; set it with `git config --global pele.assetBranch <name>` or `--branch`). The branch never appears in a pull-request diff, and the script does not touch your checkout.
 - URLs have the form `https://github.com/<owner>/<repo>/raw/<commit>/<key>/<file>`. GitHub does not proxy `github.com` image URLs, so in a private repository the viewer's own GitHub session loads them. Only people who can read the repository can see the images.
 - Never upload a diagram of a private system to a public host (a public repository, a gist, an image-sharing site). The diagram shows internal architecture.
+- `pele-publish` asks `gh` for the repository's visibility and refuses one that is not private or internal, for example a public fork in `origin`. Pass `--remote` for the private repository of the pull request. Pass `--allow-public` only for a diagram that may be public.
 - The default folder (`--key`) is the current branch name. Each publish makes a new commit, so old URLs keep showing the old images.
 - The push skips pre-push hooks, because they check the code at `HEAD` of the checkout, not the image commit. Pass `--run-hooks` to run them.
 

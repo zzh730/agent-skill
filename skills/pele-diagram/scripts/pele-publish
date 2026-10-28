@@ -6,6 +6,8 @@ request diff. The script builds the commit with git plumbing and a temporary
 index: it does not touch HEAD, the index, or the working tree of the checkout.
 Each URL names a commit SHA, so a later publish never changes an old image.
 Anyone who can read the repository can see the images, and nobody else can.
+So it refuses a repository that gh does not report as private or internal,
+unless you pass --allow-public.
 """
 
 from __future__ import annotations
@@ -40,6 +42,20 @@ def github_repo(remote: str) -> str:
     if not match:
         raise PublishError(f"remote {remote} is not a github.com repository: {url}")
     return match.group(1)
+
+
+def check_private(repo: str) -> None:
+    result = subprocess.run(
+        ["gh", "repo", "view", repo, "--json", "visibility", "--jq", ".visibility"], capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        raise PublishError(f"cannot read the visibility of {repo} with gh:\n{result.stderr.strip()}")
+    visibility = result.stdout.strip().lower()
+    if visibility not in ("private", "internal"):
+        raise PublishError(
+            f"{repo} is {visibility or 'of unknown visibility'}, so anyone could read the diagrams. "
+            "Use --remote for the private repository of the pull request, or --allow-public for a diagram that may be public."
+        )
 
 
 def asset_branch(explicit: str | None) -> str:
@@ -121,6 +137,7 @@ def main() -> int:
     parser.add_argument("--branch", help="image branch (default: git config pele.assetBranch, $PELE_ASSET_BRANCH, or pr-diagrams)")
     parser.add_argument("--key", help="folder inside the image branch (default: current branch name)")
     parser.add_argument("--run-hooks", action="store_true", help="run pre-push hooks (skipped by default; the image commit holds no code)")
+    parser.add_argument("--allow-public", action="store_true", help="publish to a repository that is not private or internal")
     parser.add_argument("--dry-run", action="store_true", help="print the plan; write and push nothing")
     parser.add_argument("--json", action="store_true", help="print JSON instead of Markdown")
     args = parser.parse_args()
@@ -133,6 +150,8 @@ def main() -> int:
         if len(set(names)) != len(names):
             raise PublishError("two inputs share a file name; rename one")
         repo = github_repo(args.remote)
+        if not args.allow_public:
+            check_private(repo)
         branch = asset_branch(args.branch)
         key = clean_key(args.key or default_key())
 
