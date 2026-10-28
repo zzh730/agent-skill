@@ -162,8 +162,34 @@ function sanitizeId(name) {
   return `pele-${slug || 'diagram'}`;
 }
 
-function warningsFor(result, source) {
+// GitHub and other Mermaid renderers draw the source classDefs as written:
+// a fill on an edge class fills the area under the curve, and a fixed fill or
+// text color does not follow dark mode.
+function classDefWarnings(source) {
+  const defs = new Map();
+  for (const [, names, props] of source.matchAll(/^\s*classDef\s+(\S+)\s+(.+?);?\s*$/gm)) {
+    for (const name of names.split(',')) defs.set(name, props);
+  }
+  const edgeIds = new Set([...source.matchAll(/(?:^|\s)([A-Za-z_][\w-]*)@(?=[-=.~<])/gm)].map((m) => m[1]));
+  const edgeClasses = new Set();
+  for (const [, ids, name] of source.matchAll(/^\s*class\s+(\S+)\s+([\w-]+)\s*;?\s*$/gm)) {
+    if (ids.split(',').some((id) => edgeIds.has(id))) edgeClasses.add(name);
+  }
   const warnings = [];
+  for (const [name, props] of defs) {
+    const fills = /(?:^|,)\s*fill\s*:\s*(?!none\b)/.test(props);
+    const colors = /(?:^|,)\s*color\s*:/.test(props);
+    if (name in DIFF_CLASSES && (fills || colors)) {
+      warnings.push(`classDef ${name} sets fill or color: GitHub draws it as written; set only stroke properties`);
+    } else if (edgeClasses.has(name) && fills) {
+      warnings.push(`classDef ${name} sets fill on an edge: Mermaid fills the area under the curve; set only stroke properties`);
+    }
+  }
+  return warnings;
+}
+
+function warningsFor(result, source) {
+  const warnings = classDefWarnings(source);
   if (result.width > 900) {
     warnings.push(`width ${Math.round(result.width)}px: a GitHub PR body is 780-880px wide, so the text shrinks; shorten labels, drop nodes, or split the diagram`);
   }

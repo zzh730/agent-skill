@@ -47,11 +47,12 @@ flowchart LR
   a[Old path]:::removed --> b[Kept]
   b e1@--> c[New path]:::added
   class e1 added
-  classDef added fill:#dafbe1,stroke:#1a7f37,color:#1f2328
-  classDef removed fill:#ffebe9,stroke:#cf222e,color:#59636e,stroke-dasharray:6 4
+  classDef added stroke:#2da44e,stroke-width:3px
+  classDef removed stroke:#e5534b,stroke-width:2px,stroke-dasharray:6 4
 ```
 
 - `added`, `removed`, and `changed` are reserved: `pele-render` gives them theme-aware colors. Other class names keep the colors you define, in both light and dark mode.
+- On an edge, a class sets only `stroke`, `stroke-width`, and `stroke-dasharray`. Mermaid applies a `fill` to the edge path and fills the area under the curve.
 - `style id fill:#hex,stroke:#hex` styles one node. `linkStyle 0 stroke:#hex` styles an edge by its index (0 is the first edge in the source). Prefer edge IDs; indexes break when edges move.
 
 ## Sequence diagram: order and timing

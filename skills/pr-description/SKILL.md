@@ -47,6 +47,8 @@ Inside the PR checkout, run:
 
 It renders both files, pushes the SVGs to the image branch of the same repository with `pele-publish`, and prints the Markdown: the images (side by side when both are narrow, stacked otherwise), a legend for the classes you used, and the Mermaid source as text in a collapsed block. Omit `--before` when the PR adds a new system. Write alt text that states the change, because email notifications and readers without image access see only the text.
 
+When you must not upload images (for example, the user says no), skip `pr-arch-section`. Put each diagram in a `mermaid` code block under **Before** and **After**, and keep the legend. GitHub draws it with the viewer's theme. Run `pele-render --check` on the files first, and fix every `classDef` warning. A `fill` or `color` in a class makes edges into colored wedges and makes text hard to read in dark mode.
+
 Put that block at the end of `## solution`:
 
 ````markdown

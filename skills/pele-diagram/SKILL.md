@@ -69,11 +69,25 @@ flowchart LR
   redis[(Session store<br/>Redis)]:::added
   handler e1@-->|GET / SET| redis
   class e1 added
-  classDef added fill:#dafbe1,stroke:#1a7f37,color:#1f2328
-  classDef changed fill:#fff8c5,stroke:#9a6700,color:#1f2328
+  classDef added stroke:#2da44e,stroke-width:3px
+  classDef changed stroke:#bf8700,stroke-width:3px
 ```
 
-Keep the `classDef` lines in the source, so it shows the same colors in any other Mermaid renderer (GitHub, mermaid.live). `pele-render` replaces them with theme-aware colors for light and dark mode. Full examples: [examples/before.mmd](examples/before.mmd) and [examples/after.mmd](examples/after.mmd).
+Copy these three `classDef` lines as they are:
+
+```text
+classDef added stroke:#2da44e,stroke-width:3px
+classDef removed stroke:#e5534b,stroke-width:2px,stroke-dasharray:6 4
+classDef changed stroke:#bf8700,stroke-width:3px
+```
+
+`pele-render` replaces them with theme-aware fills. GitHub, mermaid.live, and other Mermaid renderers use them as written, so they set only the line:
+
+- Mermaid applies a class to an edge as a style on its path. A `fill` fills the area under the curve, so the edge shows as a colored wedge, not a line.
+- A fixed `fill` or `color` does not change in dark mode. Light fills and dark text become hard to read on a dark page, and so do edge labels.
+- These three line colors have a contrast of at least 3:1 on white and on GitHub's dark backgrounds.
+
+`pele-render` warns when a `classDef` breaks these rules. Full examples: [examples/before.mmd](examples/before.mmd) and [examples/after.mmd](examples/after.mmd).
 
 ## Pele limits
 
