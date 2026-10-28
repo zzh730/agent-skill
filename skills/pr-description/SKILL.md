@@ -118,3 +118,5 @@ When new commits change the architecture again, update the `.mmd` files, run `pr
 ## Privacy
 
 `pele-publish` stores images in the same repository as the PR, so only people with read access can see them. Never upload a diagram of a private system to a public repository, a gist, or an image host.
+
+`pele-publish` refuses a repository that is not private or internal, so `pr-arch-section` fails there. In a public repository, pass `--allow-public` to `pr-arch-section` only when every diagram may be public. Otherwise use the `mermaid` blocks from step 4.

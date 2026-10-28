@@ -54,6 +54,9 @@ def main() -> int:
     parser.add_argument("--remote", default="origin")
     parser.add_argument("--branch", help="image branch; see pele-publish --help")
     parser.add_argument("--key", help="folder inside the image branch (default: current branch name)")
+    parser.add_argument(
+        "--allow-public", action="store_true", help="publish to a public repository; only for diagrams that may be public"
+    )
     args = parser.parse_args()
     if args.before and not args.before_alt:
         parser.error("--before needs --before-alt")
@@ -67,6 +70,8 @@ def main() -> int:
         publish_args += ["--branch", args.branch]
     if args.key:
         publish_args += ["--key", args.key]
+    if args.allow_public:
+        publish_args.append("--allow-public")
     published = run_json([*publish_args, *svgs])["images"]
 
     after = published[-1]
